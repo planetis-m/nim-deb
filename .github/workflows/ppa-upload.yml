@@ -63,7 +63,7 @@ jobs:
           # Save the upstream tarball with the exact name quilt expects
           wget -O "$WORKDIR/nim_${VERSION}.orig.tar.gz" "${{ inputs.src_url }}"
           # Unpack it (so we can add debian/)
-          tar -C "$WORKDIR" -xzf "$WORKDIR/nim_${VERSION}.orig.tar.gz"
+          tar -C "$WORKDIR" -xf "$WORKDIR/nim_${VERSION}.orig.tar.gz"
           SRCDIR="$(find "$WORKDIR" -maxdepth 1 -type d -name 'nimony-*' | head -n1)"
           test -n "$SRCDIR"
           
@@ -79,7 +79,6 @@ jobs:
           git config --global user.email "${DEBEMAIL}"
           git config --global user.name "${DEBFULLNAME}"
           dch --create -v "$DEBVER" -D "$SERIES" --package nim "Automated PPA build for ${SERIES}"
-
 
       - name: Vendor tarballs into debian/
         run: |
