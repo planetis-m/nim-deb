@@ -1,3 +1,3 @@
-vendor/linux_x64.tar.xz
-vendor/linux_arm64.tar.xz
+debian/vendor/linux_x64.tar.xz
+debian/vendor/linux_arm64.tar.xz
 

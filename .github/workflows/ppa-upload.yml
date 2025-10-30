@@ -65,8 +65,9 @@ jobs:
           # Unpack it (so we can add debian/)
           tar -C "$WORKDIR" -xf "$WORKDIR/nim_${VERSION}.orig.tar.gz"
           SRCDIR="$(find "$WORKDIR" -maxdepth 1 -type d -name 'nim-*' | head -n1)"
+          echo "$SRCDIR"
           test -n "$SRCDIR"
-          
+
       - name: Add debian/ packaging and create changelog
         run: |
           set -eux
@@ -88,7 +89,7 @@ jobs:
           wget -O "$SRCDIR/debian/vendor/linux_x64.tar.xz" "${{ inputs.x64_url }}"
           wget -O "$SRCDIR/debian/vendor/linux_arm64.tar.xz" "${{ inputs.arm64_url }}"
           ls -l "$SRCDIR/debian/vendor"
-          
+
       - name: Build unsigned source package
         run: |
           set -eux
