@@ -83,7 +83,7 @@ jobs:
       - name: Vendor tarballs into debian/
         run: |
           set -eux
-          SRCDIR="$(find work -maxdepth 1 -type d -name 'nimony-*' | head -n1)"
+          SRCDIR="$(find work -maxdepth 1 -type d -name 'nim-*' | head -n1)"
           mkdir -p "$SRCDIR/debian/vendor"
           wget -O "$SRCDIR/debian/vendor/linux_x64.tar.xz" "${{ inputs.x64_url }}"
           wget -O "$SRCDIR/debian/vendor/linux_arm64.tar.xz" "${{ inputs.arm64_url }}"
