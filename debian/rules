@@ -25,6 +25,7 @@ override_dh_auto_install:
 	# Create dirs
 	dh_installdirs -pnim usr/bin usr/lib/nim usr/share/nim usr/share/bash-completion/completions usr/share/zsh/vendor-completions etc/nim; \
 	# Binaries -> /usr/lib/nim/bin
+	mkdir -p debian/nim/usr/lib/nim/bin; \
 	install -m 0755 -t debian/nim/usr/lib/nim/bin build/bin/*; \
 	# Symlinks into /usr/bin
 	ln -sf ../lib/nim/bin/atlas      debian/nim/usr/bin/atlas; \
