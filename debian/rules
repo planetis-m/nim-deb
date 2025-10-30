@@ -1,0 +1,76 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	# Using prebuilt binaries; nothing to build.
+	:
+
+override_dh_auto_test:
+	# No tests for prebuilt binaries.
+	:
+
+override_dh_auto_install:
+	set -e; \
+	case "$(DEB_HOST_ARCH)" in \
+	  amd64) TARBALL="vendor/linux_x64.tar.xz" ;; \
+	  arm64) TARBALL="vendor/linux_arm64.tar.xz" ;; \
+	  *) echo "Unsupported arch $(DEB_HOST_ARCH)"; exit 1 ;; \
+	esac; \
+	mkdir -p build; \
+	tar -C build --strip-components=1 -xf "$$TARBALL"; \
+	# Create dirs
+	dh_installdirs -pnim usr/bin usr/lib/nim usr/share/nim usr/share/bash-completion/completions usr/share/zsh/vendor-completions etc/nim; \
+	# Binaries -> /usr/lib/nim/bin
+	install -m 0755 -t debian/nim/usr/lib/nim/bin build/bin/*; \
+	# Symlinks into /usr/bin
+	ln -sf ../lib/nim/bin/atlas      debian/nim/usr/bin/atlas; \
+	ln -sf ../lib/nim/bin/nim        debian/nim/usr/bin/nim; \
+	ln -sf ../lib/nim/bin/nimble     debian/nim/usr/bin/nimble; \
+	ln -sf ../lib/nim/bin/nim_dbg    debian/nim/usr/bin/nim_dbg; \
+	ln -sf ../lib/nim/bin/nim-gdb    debian/nim/usr/bin/nim-gdb; \
+	ln -sf ../lib/nim/bin/nimgrep    debian/nim/usr/bin/nimgrep; \
+	ln -sf ../lib/nim/bin/nimpretty  debian/nim/usr/bin/nimpretty; \
+	ln -sf ../lib/nim/bin/nimsuggest debian/nim/usr/bin/nimsuggest; \
+	ln -sf ../lib/nim/bin/testament  debian/nim/usr/bin/testament; \
+	# Libraries and data (prune test/vendor trees)
+	rsync -a --exclude 'dist/*/tests' \
+	        --exclude 'dist/*/vendor/*/tests' \
+	        --exclude 'dist/*/dist/*/tests' \
+	        --exclude 'dist/*/.github' \
+	        --exclude '.github' \
+	        build/lib debian/nim/usr/lib/nim/; \
+	cp -a build/compiler debian/nim/usr/lib/nim/; \
+	cp -a build/dist     debian/nim/usr/lib/nim/; \
+	# nim.nimble into compiler dir
+	install -m 0644 build/nim.nimble debian/nim/usr/lib/nim/compiler/ || true; \
+	# Docs (subset to /usr/lib/nim/doc, full to /usr/share/nim)
+	mkdir -p debian/nim/usr/lib/nim/doc; \
+	install -m 0644 build/doc/nimdoc.css build/doc/nimdoc.cls build/doc/basicopt.txt build/doc/advopt.txt build/doc/grammar.txt -t debian/nim/usr/lib/nim/doc/ || true; \
+	cp -a build/doc debian/nim/usr/share/nim/ || true; \
+	# Config to /etc/nim and symlink from /usr/lib/nim/config
+	mkdir -p debian/nim/etc/nim; \
+	cp -a build/config/* debian/nim/etc/nim/ || true; \
+	ln -sf /etc/nim debian/nim/usr/lib/nim/config; \
+	# Tools
+	mkdir -p debian/nim/usr/lib/nim/tools/dochack; \
+	[ -e build/tools/debug/nim-gdb.py ] && install -m 0644 build/tools/debug/nim-gdb.py -t debian/nim/usr/lib/nim/tools || true; \
+	[ -e build/tools/dochack/dochack.nim ] && install -m 0644 build/tools/dochack/dochack.nim build/tools/dochack/dochack.js -t debian/nim/usr/lib/nim/tools/dochack || true; \
+	# Shell completions
+	for comp in build/tools/*.bash-completion; do \
+	  [ -e "$$comp" ] || continue; \
+	  b="$$(basename "$${comp%.bash-completion}")"; \
+	  install -m 0644 "$$comp" "debian/nim/usr/share/bash-completion/completions/$$b"; \
+	done; \
+	for comp in build/tools/*.zsh-completion; do \
+	  [ -e "$$comp" ] || continue; \
+	  b="$$(basename "$${comp%.zsh-completion}")"; \
+	  install -m 0644 "$$comp" "debian/nim/usr/share/zsh/vendor-completions/_$$b"; \
+	done
+
+override_dh_missing:
+	dh_missing --fail-missing
+

@@ -1,0 +1,19 @@
+Source: nim
+Section: devel
+Priority: optional
+Maintainer: Antonis Geralis <philosykos.gr@gmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ rsync
+Standards-Version: 4.7.0
+Homepage: https://nim-lang.org/
+Rules-Requires-Root: no
+
+Package: nim
+Architecture: amd64 arm64
+Depends: ${shlibs:Depends}, ${misc:Depends}, gcc | clang
+Recommends: bash-completion
+Description: Nim programming language compiler and tools
+ Nim is a statically typed compiled systems programming language.
+ It combines successful concepts from Python, Ada and Modula.
+ This package ships the compiler and tools (nimble, nimsuggest, etc).

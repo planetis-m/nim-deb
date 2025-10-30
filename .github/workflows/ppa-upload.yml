@@ -1,0 +1,116 @@
+name: Upload Nim to Launchpad PPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Nim version
+        required: true
+        default: "2.2.5"
+      series:
+        description: Ubuntu series (noble, jammy, etc.)
+        required: true
+        default: noble
+      x64_url:
+        description: URL to prebuilt amd64 tarball
+        required: true
+        default: "https://github.com/nim-lang/nightlies/releases/download/latest-version-2-2/linux_x64.tar.xz"
+      arm64_url:
+        description: URL to prebuilt arm64 tarball
+        required: true
+        default: "https://github.com/nim-lang/nightlies/releases/download/latest-version-2-2/linux_arm64.tar.xz"
+      src_url:
+        description: URL to upstream source tarball (nim-VERSION.tar.xz)
+        required: true
+        default: "https://github.com/nim-lang/nightlies/releases/download/latest-version-2-2/source.tar.xz"
+
+jobs:
+  ppa:
+    runs-on: ubuntu-latest
+    env:
+      DEBEMAIL: ${{ secrets.DEBEMAIL }}
+      DEBFULLNAME: ${{ secrets.DEBFULLNAME }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_KEY_ID: ${{ secrets.GPG_KEY_ID }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      LAUNCHPAD_PPA: ${{ secrets.LAUNCHPAD_PPA }}
+      VERSION: ${{ inputs.version }}
+      SERIES: ${{ inputs.series }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y devscripts debhelper dput-ng lintian rsync wget fakeroot build-essential gnupg
+
+      - name: Import GPG key
+        run: |
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          gpgconf --reload gpg-agent
+          printf "%s" "${GPG_PRIVATE_KEY}" | gpg --batch --import
+          gpg --list-secret-keys --keyid-format=long
+
+      - name: Fetch upstream and vendor prebuilt tarballs
+        run: |
+          set -eux
+          WORKDIR="$PWD/work"
+          mkdir -p "$WORKDIR"
+          # Download and extract upstream source (any filename is fine here)
+          wget -O "$WORKDIR/src.tar.xz" "${{ inputs.src_url }}"
+          tar -C "$WORKDIR" -xf "$WORKDIR/src.tar.xz"
+          # The tarball should unpack to work/nim-2.2.4; detect it
+          SRCDIR="$(find "$WORKDIR" -maxdepth 1 -type d -name 'nim-*' | head -n1)"
+          test -n "$SRCDIR"
+          # Vendor the prebuilt binaries with the names debian/rules expects
+          mkdir -p "$SRCDIR/vendor"
+          wget -O "$SRCDIR/vendor/linux_x64.tar.xz" "${{ inputs.x64_url }}"
+          wget -O "$SRCDIR/vendor/linux_arm64.tar.xz" "${{ inputs.arm64_url }}"
+    
+      - name: Add debian/ packaging and create changelog
+        run: |
+          set -eux
+          WORKDIR="$PWD/work"
+          SRCDIR="$WORKDIR/nim-${VERSION}"
+          mkdir -p "$SRCDIR/debian"
+          rsync -a --delete debian/ "$SRCDIR/debian/"
+          DEBVER="${VERSION}-1ppa1~${SERIES}"
+          cd "$SRCDIR"
+          git config --global user.email "${DEBEMAIL}"
+          git config --global user.name "${DEBFULLNAME}"
+          dch --create -v "$DEBVER" -D "$SERIES" --package nim "Automated PPA build for ${SERIES}"
+
+      - name: Build unsigned source package
+        run: |
+          set -eux
+          SRCDIR="$(find work -maxdepth 1 -type d -name 'nim-*' | head -n1)"
+          cd "$SRCDIR"
+          dpkg-buildpackage -S -sd -us -uc
+    
+      - name: Sign source package
+        run: |
+          set -eux
+          cd work
+          CHANGES="nim_${VERSION}-1ppa1~${SERIES}_source.changes"
+          debsign -k"${GPG_KEY_ID}" -p "gpg --batch --yes --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE}" "$CHANGES"
+
+      - name: Upload to Launchpad PPA
+        run: |
+          set -eux
+          cd work
+          CHANGES="nim_${VERSION}-1ppa1~${SERIES}_source.changes"
+          dput "${LAUNCHPAD_PPA}" "$CHANGES"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nim_${{ inputs.version }}_${{ inputs.series }}_sourcepkg
+          path: |
+            work/nim_${{ inputs.version }}*.changes
+            work/nim_${{ inputs.version }}*.dsc
+            work/nim_${{ inputs.version }}*.debian.tar.*
+
