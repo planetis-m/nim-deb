@@ -16,8 +16,8 @@ override_dh_auto_test:
 override_dh_auto_install:
 	set -e; \
 	case "$(DEB_HOST_ARCH)" in \
-	  amd64) TARBALL="vendor/linux_x64.tar.xz" ;; \
-	  arm64) TARBALL="vendor/linux_arm64.tar.xz" ;; \
+	  amd64) TARBALL="debian/vendor/linux_x64.tar.xz" ;; \
+	  arm64) TARBALL="debian/vendor/linux_arm64.tar.xz" ;; \
 	  *) echo "Unsupported arch $(DEB_HOST_ARCH)"; exit 1 ;; \
 	esac; \
 	mkdir -p build; \

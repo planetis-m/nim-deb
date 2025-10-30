@@ -73,7 +73,7 @@ jobs:
           set -eux
           mkdir -p "$SRCDIR/debian"
           rsync -a --delete debian/ "$SRCDIR/debian/"
-          DEBVER="${VERSION}-1ppa1~${SERIES}"
+          DEBVER="${VERSION}-1ppa2~${SERIES}"
           cd "$SRCDIR"
           git config --global user.email "${DEBEMAIL}"
           git config --global user.name "${DEBFULLNAME}"
@@ -97,14 +97,14 @@ jobs:
         run: |
           set -eux
           cd work
-          CHANGES="nim_${VERSION}-1ppa1~${SERIES}_source.changes"
+          CHANGES="nim_${VERSION}-1ppa2~${SERIES}_source.changes"
           debsign -k"${GPG_KEY_ID}" -p "gpg --batch --yes --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE}" "$CHANGES"
 
       - name: Upload to Launchpad PPA
         run: |
           set -eux
           cd work
-          CHANGES="nim_${VERSION}-1ppa1~${SERIES}_source.changes"
+          CHANGES="nim_${VERSION}-1ppa2~${SERIES}_source.changes"
           dput "${LAUNCHPAD_PPA}" "$CHANGES"
 
       - name: Upload build artifacts
