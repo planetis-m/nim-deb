@@ -45,13 +45,17 @@ override_dh_auto_install:
 	        --exclude '.github' \
 	        build/lib debian/nim/usr/lib/nim/; \
 	cp -a build/compiler debian/nim/usr/lib/nim/; \
-	cp -a build/dist     debian/nim/usr/lib/nim/; \
+	mkdir -p debian/nim/usr/lib/nim/dist; \
+	rsync -a \
+		--exclude 'nimble/tests/**' \
+		--exclude 'atlas/tests/**' \
+		build/dist/ debian/nim/usr/lib/nim/dist/; \
 	# nim.nimble into compiler dir
 	install -m 0644 build/nim.nimble debian/nim/usr/lib/nim/compiler/ || true; \
 	# Docs (subset to /usr/lib/nim/doc, full to /usr/share/nim)
 	mkdir -p debian/nim/usr/lib/nim/doc; \
 	install -m 0644 build/doc/nimdoc.css build/doc/nimdoc.cls build/doc/basicopt.txt build/doc/advopt.txt build/doc/grammar.txt -t debian/nim/usr/lib/nim/doc/ || true; \
-	cp -a build/doc debian/nim/usr/share/nim/ || true; \
+	rsync -a --exclude '*.idx' build/doc debian/nim/usr/share/nim/ || true; \
 	# Config to /etc/nim and symlink from /usr/lib/nim/config
 	mkdir -p debian/nim/etc/nim; \
 	cp -a build/config/* debian/nim/etc/nim/ || true; \
