@@ -11,6 +11,10 @@ on:
         description: Ubuntu series (noble, jammy, etc.)
         required: true
         default: questing
+      ppa_rev:
+        description: PPA revision token (e.g., ppa1, ppa4)
+        required: true
+        default: "ppa1"
       x64_url:
         description: URL to prebuilt amd64 tarball
         required: true
@@ -36,6 +40,7 @@ jobs:
       LAUNCHPAD_PPA: ${{ secrets.LAUNCHPAD_PPA }}
       VERSION: ${{ inputs.version }}
       SERIES: ${{ inputs.series }}
+      PPA_REV: ${{ inputs.ppa_rev }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,7 +78,7 @@ jobs:
           set -eux
           mkdir -p "$SRCDIR/debian"
           rsync -a --delete debian/ "$SRCDIR/debian/"
-          DEBVER="${VERSION}-1ppa3~${SERIES}"
+          DEBVER="${VERSION}-1${PPA_REV}~${SERIES}"
           cd "$SRCDIR"
           git config --global user.email "${DEBEMAIL}"
           git config --global user.name "${DEBFULLNAME}"
@@ -97,20 +102,20 @@ jobs:
         run: |
           set -eux
           cd work
-          CHANGES="nim_${VERSION}-1ppa3~${SERIES}_source.changes"
+          CHANGES="nim_${VERSION}-1${PPA_REV}~${SERIES}_source.changes"
           debsign -k"${GPG_KEY_ID}" -p "gpg --batch --yes --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE}" "$CHANGES"
 
       - name: Upload to Launchpad PPA
         run: |
           set -eux
           cd work
-          CHANGES="nim_${VERSION}-1ppa3~${SERIES}_source.changes"
+          CHANGES="nim_${VERSION}-1${PPA_REV}~${SERIES}_source.changes"
           dput "${LAUNCHPAD_PPA}" "$CHANGES"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: nim_${{ inputs.version }}_${{ inputs.series }}_sourcepkg
+          name: nim_${{ inputs.version }}_${{ inputs.series }}_${{ inputs.ppa_rev }}_sourcepkg
           path: |
             work/nim_${{ inputs.version }}*.changes
             work/nim_${{ inputs.version }}*.dsc
