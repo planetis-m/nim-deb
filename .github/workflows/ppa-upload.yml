@@ -10,7 +10,7 @@ on:
       series:
         description: Ubuntu series (noble, jammy, etc.)
         required: true
-        default: noble
+        default: questing
       x64_url:
         description: URL to prebuilt amd64 tarball
         required: true
@@ -64,7 +64,7 @@ jobs:
           wget -O "$WORKDIR/nim_${VERSION}.orig.tar.gz" "${{ inputs.src_url }}"
           # Unpack it (so we can add debian/)
           tar -C "$WORKDIR" -xf "$WORKDIR/nim_${VERSION}.orig.tar.gz"
-          SRCDIR="$(find "$WORKDIR" -maxdepth 1 -type d -name 'nimony-*' | head -n1)"
+          SRCDIR="$(find "$WORKDIR" -maxdepth 1 -type d -name 'nim-*' | head -n1)"
           test -n "$SRCDIR"
           
       - name: Add debian/ packaging and create changelog
