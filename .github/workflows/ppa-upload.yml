@@ -61,11 +61,10 @@ jobs:
           WORKDIR="$PWD/work"
           mkdir -p "$WORKDIR"
           # Save the upstream tarball with the exact name quilt expects
-          wget -O "$WORKDIR/nim_${VERSION}.orig.tar.gz" "${{ inputs.src_url }}"
+          wget -O "$WORKDIR/nim_${VERSION}.orig.tar.xz" "${{ inputs.src_url }}"
           # Unpack it (so we can add debian/)
-          tar -C "$WORKDIR" -xf "$WORKDIR/nim_${VERSION}.orig.tar.gz"
+          tar -C "$WORKDIR" -xf "$WORKDIR/nim_${VERSION}.orig.tar.xz"
           SRCDIR="$(find "$WORKDIR" -maxdepth 1 -type d -name 'nim-*' | head -n1)"
-          echo "$SRCDIR"
           test -n "$SRCDIR"
 
       - name: Add debian/ packaging and create changelog
