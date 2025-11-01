@@ -7,16 +7,12 @@ on:
         description: Nim version
         required: true
         default: "2.2.5"
-      prebuilt:
-        description: Prebuilt sequence token used in upstream version (~prebuiltX)
-        required: true
-        default: "1"
       series:
-        description: Ubuntu series (questing, noble, etc.)
+        description: Ubuntu series (noble, jammy, etc.)
         required: true
         default: questing
       ppa_rev:
-        description: PPA revision token (e.g., ppa1, ppa2)
+        description: PPA revision token (e.g., ppa1, ppa4)
         required: true
         default: "ppa1"
       x64_url:
@@ -43,7 +39,6 @@ jobs:
       GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       LAUNCHPAD_PPA: ${{ secrets.LAUNCHPAD_PPA }}
       VERSION: ${{ inputs.version }}
-      PREBUILT: ${{ inputs.prebuilt }}
       SERIES: ${{ inputs.series }}
       PPA_REV: ${{ inputs.ppa_rev }}
     steps:
@@ -70,13 +65,10 @@ jobs:
           set -eux
           WORKDIR="$PWD/work"
           mkdir -p "$WORKDIR"
-          # Compute distinct upstream version to avoid orig clashes
-          UPSTREAM="${VERSION}~prebuilt${PREBUILT}"
-          echo "UPSTREAM=$UPSTREAM" >> "$GITHUB_ENV"
           # Save the upstream tarball with the exact name quilt expects
-          wget -O "$WORKDIR/nim_${UPSTREAM}.orig.tar.xz" "${{ inputs.src_url }}"
+          wget -O "$WORKDIR/nim_${VERSION}.orig.tar.xz" "${{ inputs.src_url }}"
           # Unpack it (so we can add debian/)
-          tar -C "$WORKDIR" -xf "$WORKDIR/nim_${UPSTREAM}.orig.tar.xz"
+          tar -C "$WORKDIR" -xf "$WORKDIR/nim_${VERSION}.orig.tar.xz"
           SRCDIR="$(find "$WORKDIR" -maxdepth 1 -type d -name 'nim-*' | head -n1)"
           test -n "$SRCDIR"
           echo "SRCDIR=$SRCDIR" >> "$GITHUB_ENV"
@@ -86,11 +78,11 @@ jobs:
           set -eux
           mkdir -p "$SRCDIR/debian"
           rsync -a --delete debian/ "$SRCDIR/debian/"
-          DEBVER="${UPSTREAM}-1${PPA_REV}~${SERIES}"
+          DEBVER="${VERSION}-1${PPA_REV}~${SERIES}"
           cd "$SRCDIR"
           git config --global user.email "${DEBEMAIL}"
           git config --global user.name "${DEBFULLNAME}"
-          dch --create -v "$DEBVER" -D "$SERIES" --package nim "Automated PPA prebuilt build (~prebuilt${PREBUILT}) for ${SERIES}"
+          dch --create -v "$DEBVER" -D "$SERIES" --package nim "Automated PPA build for ${SERIES}"
 
       - name: Vendor tarballs into debian/
         run: |
@@ -110,22 +102,22 @@ jobs:
         run: |
           set -eux
           cd work
-          CHANGES="nim_${UPSTREAM}-1${PPA_REV}~${SERIES}_source.changes"
+          CHANGES="nim_${VERSION}-1${PPA_REV}~${SERIES}_source.changes"
           debsign -k"${GPG_KEY_ID}" -p "gpg --batch --yes --pinentry-mode loopback --passphrase ${GPG_PASSPHRASE}" "$CHANGES"
 
       - name: Upload to Launchpad PPA
         run: |
           set -eux
           cd work
-          CHANGES="nim_${UPSTREAM}-1${PPA_REV}~${SERIES}_source.changes"
+          CHANGES="nim_${VERSION}-1${PPA_REV}~${SERIES}_source.changes"
           dput "${LAUNCHPAD_PPA}" "$CHANGES"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: nim_${{ inputs.version }}~prebuilt${{ inputs.prebuilt }}_${{ inputs.series }}_${{ inputs.ppa_rev }}_sourcepkg
+          name: nim_${{ inputs.version }}_${{ inputs.series }}_${{ inputs.ppa_rev }}_sourcepkg
           path: |
-            work/nim_${{ inputs.version }}~prebuilt${{ inputs.prebuilt }}*.changes
-            work/nim_${{ inputs.version }}~prebuilt${{ inputs.prebuilt }}*.dsc
-            work/nim_${{ inputs.version }}~prebuilt${{ inputs.prebuilt }}*.debian.tar.*
+            work/nim_${{ inputs.version }}*.changes
+            work/nim_${{ inputs.version }}*.dsc
+            work/nim_${{ inputs.version }}*.debian.tar.*
 
