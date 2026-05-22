@@ -6,11 +6,11 @@ on:
       version:
         description: Nim version
         required: true
-        default: "2.2.5"
+        default: "2.2.10"
       series:
-        description: Ubuntu series (noble, jammy, etc.)
+        description: Ubuntu series (resolute, noble, etc.)
         required: true
-        default: questing
+        default: resolute
       ppa_rev:
         description: PPA revision token (e.g., ppa1, ppa4)
         required: true
@@ -43,7 +43,7 @@ jobs:
       PPA_REV: ${{ inputs.ppa_rev }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install packaging tools
         run: |
@@ -113,7 +113,7 @@ jobs:
           dput "${LAUNCHPAD_PPA}" "$CHANGES"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nim_${{ inputs.version }}_${{ inputs.series }}_${{ inputs.ppa_rev }}_sourcepkg
           path: |
