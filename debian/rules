@@ -37,18 +37,20 @@ override_dh_auto_install:
 	ln -sf ../lib/nim/bin/nimpretty  debian/nim/usr/bin/nimpretty; \
 	ln -sf ../lib/nim/bin/nimsuggest debian/nim/usr/bin/nimsuggest; \
 	ln -sf ../lib/nim/bin/testament  debian/nim/usr/bin/testament; \
-	# Libraries and data (prune test/vendor trees)
-	rsync -a --exclude 'dist/*/tests' \
-	        --exclude 'dist/*/vendor/*/tests' \
-	        --exclude 'dist/*/dist/*/tests' \
-	        --exclude 'dist/*/.github' \
-	        --exclude '.github' \
-	        build/lib debian/nim/usr/lib/nim/; \
+	# Libraries
+	rsync -a build/lib debian/nim/usr/lib/nim/; \
 	cp -a build/compiler debian/nim/usr/lib/nim/; \
+	# Third-party sources (match RPM's ignored directories)
 	mkdir -p debian/nim/usr/lib/nim/dist; \
 	rsync -a \
-		--exclude 'nimble/tests/**' \
-		--exclude 'atlas/tests/**' \
+		--exclude '*/tests' \
+		--exclude '*/vendor/*/tests' \
+		--exclude '*/dist/*/tests' \
+		--exclude '*/src/*/tests' \
+		--exclude '*/dist/*/.github' \
+		--exclude '*/.github' \
+		--exclude 'nimble/nimble-guide' \
+		--exclude '*/.nimcache' \
 		build/dist/ debian/nim/usr/lib/nim/dist/; \
 	# nim.nimble into compiler dir
 	install -m 0644 build/nim.nimble debian/nim/usr/lib/nim/compiler/ || true; \
@@ -78,4 +80,3 @@ override_dh_auto_install:
 
 override_dh_missing:
 	dh_missing --fail-missing
-
